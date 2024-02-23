@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Recipe Maker</string>
+
+    <string name="text_title">Get Cooking</string>
+    <string name="text_subtitle">Simple way to make Tasty Recipe</string>
+    <string name="text_hello_chef">Hello Chef</string>
+    <string name="text_what_cooking">What are you cooking today?</string>
+
+    <string name="button_button">Button</string>
+    <string name="button_start_cooking">Start Cooking</string>
+    <string name="button_add_recipe">Add Recipe</string>
+    <string name="button_save_recipe">Save Recipe</string>
+
+    <string name="label_recipe_type">Recipe Type</string>
+    <string name="label_recipe_name">Recipe Name</string>
+</resources>
