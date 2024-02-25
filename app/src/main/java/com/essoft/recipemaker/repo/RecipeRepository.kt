@@ -12,8 +12,8 @@ class RecipeRepository(private val recipeDao: IRecipeDao, private val storageHan
         return recipeDao.getAllRecipes()
     }
 
-    override suspend fun createRecipe(dbRcipe: DbRecipeModel) {
-        recipeDao.createRecipe(dbRcipe)
+    override suspend fun createRecipe(dbRecipe: DbRecipeModel) {
+        recipeDao.createRecipe(dbRecipe)
     }
 
     override suspend fun readRecipe(): Flow<DbRecipeModel> {

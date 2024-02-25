@@ -31,7 +31,7 @@ import com.essoft.recipemaker.ui.theme.PoppinsFonts
 
 @Preview
 @Composable
-fun RecipeCard(recipe: DbRecipeModel = DbRecipeModel(name = "This Is a Test Recipe Name Test Test Test Test Test")) {
+fun RecipeCard(recipe: DbRecipeModel = DbRecipeModel(name = "This Is a Test Recipe Name")) {
     Card(
         modifier = Modifier
             .height(150.dp)
@@ -43,7 +43,7 @@ fun RecipeCard(recipe: DbRecipeModel = DbRecipeModel(name = "This Is a Test Reci
             AsyncImage(
                 model = ImageRequest
                 .Builder(LocalContext.current)
-                .data(data = recipe.imageUri?.toUri())
+                .data(data = recipe.imageUri.toUri())
                 .build(),
                 contentDescription = "Recipe Image",
                 contentScale = ContentScale.Crop
