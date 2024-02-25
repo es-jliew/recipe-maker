@@ -1,18 +1,12 @@
 package com.essoft.recipemaker.model
 
-import android.os.Parcelable
-import io.objectbox.annotation.Entity
-import io.objectbox.annotation.Id
-import kotlinx.parcelize.Parcelize
-
-@Entity
-@Parcelize
+//Use for temporary updating actual entity in ObjectBox
+//Dno not use this to create new entity
 data class RecipeModel(
-    @Id
     var id: Long = 0,
-    var imageUri: String? = null,
+    var imageUri: String = "",
     var name: String = "",
-    var type: String? = null,
+    var type: String = "",
     var ingredients: String = "",
     var instructions: String = "",
-) : Parcelable
+)

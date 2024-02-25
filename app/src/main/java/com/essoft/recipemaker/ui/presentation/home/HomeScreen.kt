@@ -1,6 +1,5 @@
 package com.essoft.recipemaker.ui.presentation.home
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +23,7 @@ import com.essoft.recipemaker.ui.presentation.destinations.AddScreenDestination
 import com.essoft.recipemaker.ui.presentation.destinations.DetailScreenDestination
 import com.essoft.recipemaker.ui.theme.RecipeMakerTheme
 import com.essoft.recipemaker.viewmodel.home.HomeEvent
-import com.essoft.recipemaker.viewmodel.home.HomeState
+import com.essoft.recipemaker.viewmodel.home.HomeUiState
 import com.essoft.recipemaker.viewmodel.home.HomeViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -39,15 +37,14 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     BackHandler {}
 
     LaunchedEffect(Unit) {
-        viewModel.retrieveAllRecipes()
-        Log.d("eugene","get all")
+        viewModel.onEvent(HomeEvent.SetupUi)
     }
 
     val uiState = viewModel.uiState.collectAsState()
 
     HomeScreenContent(
-        uiState = uiState,
-        onEvent = { viewModel.onEvent(HomeEvent.FilterRecipe(it)) },
+        uiState = uiState.value,
+        onTabCLick = viewModel::onEvent,
         navigator = navigator
     )
 }
@@ -55,8 +52,8 @@ fun HomeScreen(navigator: DestinationsNavigator) {
 @Preview
 @Composable
 fun HomeScreenContent(
-    uiState: State<HomeState>? = null,
-    onEvent: (RecipeType) -> Unit = {},
+    uiState: HomeUiState = HomeUiState(),
+    onTabCLick: (HomeEvent) -> Unit = {},
     navigator: DestinationsNavigator? = null
 ) {
     RecipeMakerTheme {
@@ -80,16 +77,14 @@ fun HomeScreenContent(
 
                     RecipeChipGroup(
                         recipeTypes = RecipeType.getAllRecipeTypes(),
-                        selectedRecipeType = uiState?.value?.selectedRecipeType,
-                        onSelectedChanged = {
-                            onEvent(RecipeType.getRecipeType(it))
-                        }
+                        selectedRecipeType = uiState.selectedRecipeType,
+                        onSelectedChanged = { onTabCLick(HomeEvent.FilterRecipe(RecipeType.getRecipeType(it))) }
                     )
 
                     Spacer(modifier = Modifier.padding(top= 20.dp))
 
                     RecipeCardList(
-                        recipes = uiState?.value!!.recipes,
+                        recipes = uiState.currentDbRecipes,
                         onClick = { navigator?.navigate(DetailScreenDestination(recipe = it)) }
                     )
                 }

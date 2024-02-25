@@ -1,9 +1,12 @@
 package com.essoft.recipemaker.di
 
+import com.essoft.recipemaker.utils.FormatValidator
+import com.essoft.recipemaker.utils.IFormatValidator
+import com.essoft.recipemaker.utils.IStorageHandler
 import com.essoft.recipemaker.utils.StorageHandler
 
 import org.koin.dsl.module
 
 val utilsModule = module {
-    single { StorageHandler(get()) }
+    single<IStorageHandler> { StorageHandler(get()) }
 }

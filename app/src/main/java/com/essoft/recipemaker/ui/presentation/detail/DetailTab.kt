@@ -154,7 +154,7 @@ fun DetailTab(
                             readOnly = true,
                             textStyle = TextStyle(
                                 fontFamily = PoppinsFonts,
-                                fontSize = 14.sp,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.W400
                             ),
                             colors = TextFieldDefaults.outlinedTextFieldColors(

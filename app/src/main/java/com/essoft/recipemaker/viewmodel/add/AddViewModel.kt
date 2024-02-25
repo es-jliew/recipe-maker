@@ -3,32 +3,70 @@ package com.essoft.recipemaker.viewmodel.add
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.essoft.recipemaker.model.NonEntityRecipeModel
 import com.essoft.recipemaker.model.RecipeModel
+import com.essoft.recipemaker.model.DbRecipeModel
 import com.essoft.recipemaker.model.RecipeType
 import com.essoft.recipemaker.repo.IRecipeRepository
-import com.essoft.recipemaker.utils.Validator
+import com.essoft.recipemaker.utils.FormatValidator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel() {
-    private val _uiState = MutableStateFlow(AddState())
-    val uiState: StateFlow<AddState> = _uiState
+    private val _uiState = MutableStateFlow(AddUiState())
+    val uiState: StateFlow<AddUiState> = _uiState
 
-    fun saveRecipe() {
-        if (Validator.isValidRecipe(uiState.value)) {
-            if (uiState.value.id > 0) {
-                updateRecipe()
-            } else {
-                createRecipe()
+    fun onEvent(event: AddEvent) {
+        when(event) {
+            is AddEvent.UpdateImageUri -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _uiState.update { it.copy(uri = event.uri) }
+                }
             }
-        } else {
-            _uiState.apply {
-                update { it.copy(showSnackbar = true) }
-                update { it.copy(snackbarMessage = "Incomplete Info. Please try again.") }
+            is AddEvent.UpdateRecipeName -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _uiState.update { it.copy(name = event.name) }
+                }
+            }
+            is AddEvent.UpdateRecipeType -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    Log.d("Eugene", event.type)
+                    _uiState.update { it.copy(selectedRecipeType = RecipeType.getRecipeType(event.type)) }
+                    _uiState.update { it.copy(type = event.type) }
+                }
+            }
+            is AddEvent.UpdateRecipeIngredient -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _uiState.update { it.copy(ingredient = event.ingredient) }
+                }
+            }
+            is AddEvent.UpdateRecipeInstruction -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _uiState.update { it.copy(instruction = event.instruction) }
+                }
+            }
+
+            is AddEvent.UpdateSelectedTab -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _uiState.update { it.copy(selectedTabIndex = event.index) }
+                }
+            }
+
+            is AddEvent.ShowSnackbar -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    _uiState.update { it.copy(showSnackbar = event.show) }
+                }
+            }
+
+            is AddEvent.SetupUi -> {
+                setupUi(event.dbRecipe)
+            }
+
+            is AddEvent.SaveRecipe -> {
+                saveRecipe()
             }
         }
     }
@@ -36,7 +74,7 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
     private fun createRecipe() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val recipe = RecipeModel(
+                val dbRecipe = DbRecipeModel(
                     imageUri = uiState.value.uri,
                     name = uiState.value.name,
                     type = uiState.value.type,
@@ -44,7 +82,14 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
                     instructions = uiState.value.instruction
                 )
 
-                recipeRepository.createRecipe(recipe)
+                val savedImageUri = async(Dispatchers.IO) {
+                    recipeRepository.saveRecipeImageToLocal(dbRecipe.imageUri)
+                }.await()
+
+                dbRecipe.imageUri = savedImageUri
+
+                recipeRepository.createRecipe(dbRecipe)
+
                 _uiState.apply {
                     update { it.copy(showSnackbar = true) }
                     update { it.copy(snackbarMessage = "Recipe added.")}
@@ -59,19 +104,54 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
         }
     }
 
+    private fun saveRecipe() {
+        if (FormatValidator.isValidRecipe(uiState.value)) {
+            if (uiState.value.id > 0) {
+                updateRecipe()
+            } else {
+                createRecipe()
+            }
+        } else {
+            _uiState.apply {
+                update { it.copy(showSnackbar = true) }
+                update { it.copy(snackbarMessage = "Incomplete Info. Please try again.") }
+            }
+        }
+    }
+
+    private fun setupUi(recipe: DbRecipeModel) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.apply {
+                update { it.copy(id = recipe.id) }
+                update { it.copy(name = recipe.name) }
+                update { it.copy(uri = recipe.imageUri) }
+                update { it.copy(selectedRecipeType = RecipeType.getRecipeType(recipe.type))}
+                update { it.copy(type = recipe.type) }
+                update { it.copy(ingredient = recipe.ingredients) }
+                update { it.copy(instruction = recipe.instructions) }
+            }
+        }
+    }
+
     private fun updateRecipe() {
         try {
             viewModelScope.launch(Dispatchers.IO) {
-                val partialRecipe = NonEntityRecipeModel(
+                val recipe = RecipeModel(
                     id = uiState.value.id,
                     imageUri = uiState.value.uri,
                     name = uiState.value.name,
                     type = uiState.value.type,
                     ingredients = uiState.value.ingredient,
-                    instructions = uiState.value.instruction
+                    instructions = uiState.value.instruction,
                 )
 
-                recipeRepository.updateRecipe(partialRecipe)
+                val savedImageUri = async(Dispatchers.IO) {
+                    recipeRepository.saveRecipeImageToLocal(uiState.value.uri)
+                }.await()
+
+                recipe.imageUri = savedImageUri
+                recipeRepository.updateRecipe(recipe)
+
                 _uiState.apply {
                     update { it.copy(showSnackbar = true) }
                     update { it.copy(snackbarMessage = "Recipe updated.")}
@@ -85,74 +165,14 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
             }
         }
     }
-
-    fun updateUiState(recipe: RecipeModel) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiState.apply {
-                update { it.copy(id = recipe.id) }
-                update { it.copy(name = recipe.name) }
-                update { it.copy(uri = recipe.imageUri.toString()) }
-                update { it.copy(selectedRecipeType = RecipeType.getRecipeType(recipe.type.toString()))}
-                update { it.copy(type = recipe.type.toString()) }
-                update { it.copy(ingredient = recipe.ingredients) }
-                update { it.copy(instruction = recipe.instructions) }
-            }
-        }
-    }
-
-    fun onEvent(event: AddEvent) {
-        when(event) {
-            is AddEvent.UpdateUri -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    _uiState.update { it.copy(uri = event.uri) }
-                    Log.d("Eugene", event.uri)
-                }
-            }
-            is AddEvent.UpdateName -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    _uiState.update { it.copy(name = event.name) }
-                }
-            }
-            is AddEvent.UpdateType -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    Log.d("Eugene", event.type)
-                    _uiState.update { it.copy(selectedRecipeType = RecipeType.getRecipeType(event.type)) }
-                    _uiState.update { it.copy(type = event.type) }
-                    Log.d("Eugene", _uiState.value.type)
-                }
-            }
-            is AddEvent.UpdateIngredient -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    _uiState.update { it.copy(ingredient = event.ingredient) }
-                }
-            }
-            is AddEvent.UpdateInstruction -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    _uiState.update { it.copy(instruction = event.instruction) }
-                }
-            }
-
-            is AddEvent.UpdateSelectedTab -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    _uiState.update { it.copy(selectedTabIndex = event.index) }
-                }
-            }
-
-            is AddEvent.UpdateShowSnackbar -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    _uiState.update { it.copy(showSnackbar = event.show) }
-                }
-            }
-        }
-    }
 }
 
-data class AddState(
+data class AddUiState(
     val selectedRecipeType: RecipeType = RecipeType.MAIN,
     val selectedTabIndex: Int = 0,
     val showSnackbar: Boolean = false,
     val snackbarMessage: String = "",
-    val id: Long = -1, // Id only for query Objectbox
+    val id: Long = -1, // Id only for non entity recipe
     val name: String = "",
     val type: String = RecipeType.MAIN.name,
     val uri: String = "",

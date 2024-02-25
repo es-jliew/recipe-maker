@@ -14,7 +14,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -23,13 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.essoft.recipemaker.model.RecipeModel
+import com.essoft.recipemaker.model.DbRecipeModel
 import com.essoft.recipemaker.ui.common.RecipeChip
 import com.essoft.recipemaker.ui.presentation.destinations.AddScreenDestination
 import com.essoft.recipemaker.ui.presentation.destinations.HomeScreenDestination
 import com.essoft.recipemaker.ui.theme.RecipeMakerTheme
 import com.essoft.recipemaker.viewmodel.detail.DetailEvent
-import com.essoft.recipemaker.viewmodel.detail.DetailState
+import com.essoft.recipemaker.viewmodel.detail.DetailUiState
 import com.essoft.recipemaker.viewmodel.detail.DetailViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -39,19 +38,19 @@ import org.koin.androidx.compose.koinViewModel
 
 @Destination
 @Composable
-fun DetailScreen(recipe: RecipeModel, navigator: DestinationsNavigator) {
+fun DetailScreen(recipe: DbRecipeModel, navigator: DestinationsNavigator) {
     val viewModel: DetailViewModel = koinViewModel()
     val uiState = viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.updateRecipe(recipe)
+        viewModel.onEvent(DetailEvent.SetupUi(recipe))
     }
 
     DetailScreenContent(
-        uiState = uiState,
-        onTabEvent = { viewModel.onEvent(DetailEvent.UpdateSelectedTab(it))},
-        onDeleteEvent = { viewModel.onEvent(DetailEvent.DeleteRecipe(uiState.value.recipe.id))},
-        onSnackbarEvent = { viewModel.onEvent(DetailEvent.UpdateShowSnackbar(it))},
+        uiState = uiState.value,
+        onTabClick = viewModel::onEvent,
+        onDeleteClick = viewModel::onEvent,
+        onSnackbarEvent = viewModel::onEvent,
         navigator = navigator
     )
 }
@@ -60,10 +59,10 @@ fun DetailScreen(recipe: RecipeModel, navigator: DestinationsNavigator) {
 @Preview
 @Composable
 fun DetailScreenContent(
-    uiState: State<DetailState>? = null,
-    onTabEvent: (Int) -> Unit = {},
-    onDeleteEvent: () -> Unit = {},
-    onSnackbarEvent: (Boolean) -> Unit = {},
+    uiState: DetailUiState = DetailUiState(),
+    onTabClick: (DetailEvent) -> Unit = {},
+    onDeleteClick: (DetailEvent) -> Unit = {},
+    onSnackbarEvent: (DetailEvent) -> Unit = {},
     navigator: DestinationsNavigator? = null
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -82,50 +81,48 @@ fun DetailScreenContent(
 
                     DetailAppBar(
                         onBackClick = { navigator?.navigate(HomeScreenDestination) },
-                        onEditClick = { navigator?.navigate(AddScreenDestination(uiState?.value?.recipe!!)) },
-                        onDeleteClick = { onDeleteEvent() }
+                        onEditClick = { navigator?.navigate(AddScreenDestination(uiState.dbRecipe)) },
+                        onDeleteClick = { onDeleteClick(DetailEvent.DeleteRecipe(uiState.dbRecipe.id)) }
                     )
 
                     Spacer(modifier = Modifier.padding(top = 16.dp))
 
-                    ImageCard(imageUri = uiState?.value?.recipe?.imageUri.toString())
+                    ImageCard(imageUri = uiState.dbRecipe.imageUri)
 
                     Spacer(modifier = Modifier.padding(top = 12.dp))
 
                     Row {
-                        RecipeChip(name = uiState?.value?.recipe?.type.toString())
+                        RecipeChip(name = uiState.dbRecipe.type)
 
                         Spacer(modifier = Modifier.padding(start = 12.dp))
 
-                        RecipeTitle(name = uiState?.value?.recipe?.name.toString())
+                        RecipeTitle(name = uiState.dbRecipe.name)
                     }
 
                     Spacer(modifier = Modifier.padding(top = 12.dp))
 
                     DetailTab(
-                        ingredient = uiState?.value?.recipe?.ingredients.toString(),
-                        instruction = uiState?.value?.recipe?.instructions.toString(),
-                        selectedTab = uiState?.value?.selectedTabIndex!!,
-                        onTabClick = { onTabEvent(it) }
+                        ingredient = uiState.dbRecipe.ingredients,
+                        instruction = uiState.dbRecipe.instructions,
+                        selectedTab = uiState.selectedTabIndex,
+                        onTabClick = { onTabClick(DetailEvent.UpdateSelectedTab(it)) }
                     )
                 }
 
-                if (uiState?.value?.showSnackbar == true) {
+                if (uiState.showSnackbar) {
                     coroutineScope.launch {
                         val result = snackbarHostState.showSnackbar (
-                            message = uiState.value.snackbarMessage,
+                            message = uiState.snackbarMessage,
                             withDismissAction = true,
                             duration = SnackbarDuration.Short
                         )
                         when(result) {
                             SnackbarResult.ActionPerformed -> {
-                                //Do Something
-                                onSnackbarEvent(false)
+                                onSnackbarEvent(DetailEvent.ShowSnackbar(false))
                                 navigator?.navigate(HomeScreenDestination)
                             }
                             SnackbarResult.Dismissed -> {
-                                //Do Something
-                                onSnackbarEvent(false)
+                                onSnackbarEvent(DetailEvent.ShowSnackbar(false))
                                 navigator?.navigate(HomeScreenDestination)
                             }
                         }

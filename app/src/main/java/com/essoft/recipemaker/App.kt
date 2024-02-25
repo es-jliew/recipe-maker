@@ -2,7 +2,7 @@ package com.essoft.recipemaker
 
 import android.app.Application
 import com.essoft.recipemaker.db.ObjectBox
-import com.essoft.recipemaker.di.objectBoxModule
+import com.essoft.recipemaker.di.databaseModule
 import com.essoft.recipemaker.di.repositoryModule
 import com.essoft.recipemaker.di.utilsModule
 import com.essoft.recipemaker.di.viewModelModule
@@ -15,7 +15,7 @@ class App: Application() {
         ObjectBox.init(this)
         startKoin {
             androidContext(this@App)
-            modules(objectBoxModule, repositoryModule, utilsModule, viewModelModule)
+            modules(databaseModule, repositoryModule, utilsModule, viewModelModule)
         }
     }
 }

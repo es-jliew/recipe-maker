@@ -23,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,7 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.essoft.recipemaker.R
-import com.essoft.recipemaker.model.RecipeModel
+import com.essoft.recipemaker.model.DbRecipeModel
 import com.essoft.recipemaker.model.RecipeType
 import com.essoft.recipemaker.ui.common.LabelText
 import com.essoft.recipemaker.ui.common.MediumButton
@@ -50,7 +49,7 @@ import com.essoft.recipemaker.ui.theme.PoppinsFonts
 import com.essoft.recipemaker.ui.theme.Primary100
 import com.essoft.recipemaker.ui.theme.RecipeMakerTheme
 import com.essoft.recipemaker.viewmodel.add.AddEvent
-import com.essoft.recipemaker.viewmodel.add.AddState
+import com.essoft.recipemaker.viewmodel.add.AddUiState
 import com.essoft.recipemaker.viewmodel.add.AddViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -60,26 +59,26 @@ import org.koin.androidx.compose.koinViewModel
 
 @Destination
 @Composable
-fun AddScreen(recipe: RecipeModel?, navigator: DestinationsNavigator) {
+fun AddScreen(recipe: DbRecipeModel?, navigator: DestinationsNavigator) {
     val viewModel: AddViewModel = koinViewModel()
     val uiState = viewModel.uiState.collectAsState()
 
     if (recipe != null) {
         LaunchedEffect(Unit) {
-            viewModel.updateUiState(recipe)
+            viewModel.onEvent(AddEvent.SetupUi(recipe))
         }
     }
 
     AddScreenContent(
-        uiState = uiState,
-        onUriEvent = { viewModel.onEvent(AddEvent.UpdateUri(it)) },
-        onTypeEvent = { viewModel.onEvent(AddEvent.UpdateType(it)) },
-        onNameEvent = { viewModel.onEvent(AddEvent.UpdateName(it)) },
-        onTabEvent = { viewModel.onEvent(AddEvent.UpdateSelectedTab(it))},
-        onIngredientEvent = { viewModel.onEvent(AddEvent.UpdateIngredient(it))},
-        onInstructionEvent = { viewModel.onEvent(AddEvent.UpdateInstruction(it))},
-        onSaveEvent = { viewModel.saveRecipe() },
-        onSnackbarEvent = { viewModel.onEvent(AddEvent.UpdateShowSnackbar(false))},
+        uiState = uiState.value,
+        onUriChange = viewModel::onEvent,
+        onTypeChange = viewModel::onEvent,
+        onNameChange = viewModel::onEvent,
+        onTabClick = viewModel::onEvent,
+        onIngredientChange = viewModel::onEvent,
+        onInstructionChange = viewModel::onEvent,
+        onSaveClick = viewModel::onEvent,
+        onSnackbarEvent = viewModel::onEvent,
         navigator
     )
 }
@@ -89,18 +88,17 @@ fun AddScreen(recipe: RecipeModel?, navigator: DestinationsNavigator) {
 @Preview
 @Composable
 fun AddScreenContent(
-    uiState: State<AddState>? = null,
-    onUriEvent: (String) -> Unit = {},
-    onTypeEvent: (String) -> Unit = {},
-    onNameEvent: (String) -> Unit = {},
-    onTabEvent: (Int) -> Unit = {},
-    onIngredientEvent: (String) -> Unit = {},
-    onInstructionEvent: (String) -> Unit = {},
-    onSaveEvent: () -> Unit = {},
-    onSnackbarEvent: () -> Unit = {},
+    uiState: AddUiState = AddUiState(),
+    onUriChange: (AddEvent) -> Unit = {},
+    onTypeChange: (AddEvent) -> Unit = {},
+    onNameChange: (AddEvent) -> Unit = {},
+    onTabClick: (AddEvent) -> Unit = {},
+    onIngredientChange: (AddEvent) -> Unit = {},
+    onInstructionChange: (AddEvent) -> Unit = {},
+    onSaveClick: (AddEvent) -> Unit = {},
+    onSnackbarEvent: (AddEvent) -> Unit = {},
     navigator: DestinationsNavigator? = null
 ) {
-    //var name by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope: CoroutineScope = rememberCoroutineScope()
@@ -125,8 +123,8 @@ fun AddScreenContent(
                     Spacer(modifier = Modifier.padding(top = 16.dp))
 
                     AddImageCard(
-                        photoUri = uiState?.value?.uri.toString(),
-                        onClick = { onUriEvent(it) }
+                        photoUri = uiState.uri,
+                        onClick = { onUriChange(AddEvent.UpdateImageUri(it)) }
                     )
 
                     Spacer(modifier = Modifier.padding(top = 12.dp))
@@ -137,18 +135,18 @@ fun AddScreenContent(
 
                     RecipeChipGroup(
                         recipeTypes = RecipeType.getSubRecipeTypes(),
-                        selectedRecipeType = uiState?.value?.selectedRecipeType,
-                        onSelectedChanged = { onTypeEvent(it) })
+                        selectedRecipeType = uiState.selectedRecipeType,
+                        onSelectedChanged = { onTypeChange(AddEvent.UpdateRecipeType(it)) }
+                    )
 
                     Spacer(modifier = Modifier.padding(top = 12.dp))
 
                     LabelText(R.string.label_recipe_name)
 
                     OutlinedTextField(
-                        value = uiState?.value?.name.toString(),
+                        value = uiState.name,
                         onValueChange = {
-                            //name = it
-                            onNameEvent(it)
+                            onNameChange(AddEvent.UpdateRecipeName(it))
                         },
                         label = { Text(text = "Name", fontSize = 14.sp) },
                         modifier = Modifier
@@ -181,17 +179,17 @@ fun AddScreenContent(
                     Spacer(modifier = Modifier.padding(top = 16.dp))
 
                     AddTab(
-                        ingredient = uiState?.value?.ingredient.toString(),
-                        instruction = uiState?.value?.instruction.toString(),
-                        selectedTab = uiState?.value?.selectedTabIndex!!,
-                        onTabClick = { onTabEvent(it) },
-                        onIngredientChange = { onIngredientEvent(it) },
-                        onInstructionChange = { onInstructionEvent(it) }
+                        ingredient = uiState.ingredient,
+                        instruction = uiState.instruction,
+                        selectedTab = uiState.selectedTabIndex,
+                        onTabClick = { onTabClick(AddEvent.UpdateSelectedTab(it)) },
+                        onIngredientChange = { onIngredientChange(AddEvent.UpdateRecipeIngredient(it)) },
+                        onInstructionChange = { onInstructionChange(AddEvent.UpdateRecipeInstruction(it)) }
                     )
                 }
 
                 MediumButton(
-                    onSaveEvent,
+                    onClick = { onSaveClick(AddEvent.SaveRecipe) },
                     stringId = R.string.button_save_recipe,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -203,22 +201,22 @@ fun AddScreenContent(
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
 
-                if (uiState?.value?.showSnackbar == true) {
+                if (uiState.showSnackbar) {
                     coroutineScope.launch {
                         val result = snackbarHostState.showSnackbar (
-                            message = uiState.value.snackbarMessage,
+                            message = uiState.snackbarMessage,
                             withDismissAction = true,
                             duration = SnackbarDuration.Short
                         )
                         when(result) {
                             SnackbarResult.ActionPerformed -> {
                                 //Do Something
-                                onSnackbarEvent()
+                                onSnackbarEvent(AddEvent.ShowSnackbar(false))
                                 navigator?.navigate(HomeScreenDestination)
                             }
                             SnackbarResult.Dismissed -> {
                                 //Do Something
-                                onSnackbarEvent()
+                                onSnackbarEvent(AddEvent.ShowSnackbar(false))
                                 navigator?.navigate(HomeScreenDestination)
                             }
                         }

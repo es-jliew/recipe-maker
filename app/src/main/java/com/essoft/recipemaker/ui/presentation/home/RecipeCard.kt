@@ -26,12 +26,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.essoft.recipemaker.model.RecipeModel
+import com.essoft.recipemaker.model.DbRecipeModel
 import com.essoft.recipemaker.ui.theme.PoppinsFonts
 
 @Preview
 @Composable
-fun RecipeCard(recipe: RecipeModel = RecipeModel(name = "This Is a Test Recipe Name Test Test Test Test Test")) {
+fun RecipeCard(recipe: DbRecipeModel = DbRecipeModel(name = "This Is a Test Recipe Name Test Test Test Test Test")) {
     Card(
         modifier = Modifier
             .height(150.dp)

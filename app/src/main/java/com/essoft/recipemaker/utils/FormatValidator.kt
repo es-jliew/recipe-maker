@@ -1,9 +1,9 @@
 package com.essoft.recipemaker.utils
 
-import com.essoft.recipemaker.viewmodel.add.AddState
+import com.essoft.recipemaker.viewmodel.add.AddUiState
 
-object Validator {
-    fun isValidRecipe(uiState: AddState): Boolean {
+object FormatValidator: IFormatValidator {
+    override fun isValidRecipe(uiState: AddUiState): Boolean {
         if (uiState.uri.isEmpty()) {
             return false
         }

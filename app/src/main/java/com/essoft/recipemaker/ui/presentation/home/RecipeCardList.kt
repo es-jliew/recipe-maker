@@ -11,12 +11,12 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.essoft.recipemaker.model.RecipeModel
+import com.essoft.recipemaker.model.DbRecipeModel
 
 @Composable
 fun RecipeCardList(
-    recipes: List<RecipeModel>,
-    onClick: (RecipeModel) -> Unit = {}
+    recipes: List<DbRecipeModel>,
+    onClick: (DbRecipeModel) -> Unit = {}
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),

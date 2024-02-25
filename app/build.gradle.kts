@@ -85,7 +85,8 @@ dependencies {
     implementation ("io.insert-koin:koin-androidx-compose:3.4.6")
 
     //Compose Navigation
-    implementation("io.github.raamcosta.compose-destinations:core:1.10.0")
+    implementation ("com.google.accompanist:accompanist-navigation-animation:0.28.0")
+    implementation("io.github.raamcosta.compose-destinations:animations-core:1.10.0")
     ksp("io.github.raamcosta.compose-destinations:ksp:1.10.0")
 
     testImplementation("junit:junit:4.13.2")
