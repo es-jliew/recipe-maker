@@ -3,7 +3,6 @@ package com.essoft.recipemaker.utils
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.util.Log
 import com.essoft.recipemaker.constants.FileScheme
 import java.io.File
 import java.io.FileInputStream
