@@ -19,6 +19,8 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
     private val _uiState = MutableStateFlow(AddUiState())
     val uiState: StateFlow<AddUiState> = _uiState
 
+    lateinit var tempUri: String
+
     fun onEvent(event: AddEvent) {
         when(event) {
             is AddEvent.UpdateImageUri -> {
@@ -130,6 +132,8 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
                 update { it.copy(ingredient = recipe.ingredients) }
                 update { it.copy(instruction = recipe.instructions) }
             }
+
+            tempUri = recipe.imageUri
         }
     }
 
@@ -145,11 +149,14 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
                     instructions = uiState.value.instruction,
                 )
 
-                val savedImageUri = async(Dispatchers.IO) {
-                    recipeRepository.saveRecipeImageToLocal(uiState.value.uri)
-                }.await()
+                if (tempUri != uiState.value.uri) {
+                    val savedImageUri = async(Dispatchers.IO) {
+                        recipeRepository.saveRecipeImageToLocal(uiState.value.uri)
+                    }.await()
 
-                recipe.imageUri = savedImageUri
+                    recipe.imageUri = savedImageUri
+                }
+
                 recipeRepository.updateRecipe(recipe)
 
                 _uiState.apply {

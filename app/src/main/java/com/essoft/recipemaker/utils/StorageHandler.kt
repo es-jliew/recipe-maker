@@ -28,6 +28,7 @@ class StorageHandler (private val context: Context): IStorageHandler {
             inputStream?.copyTo(output, 4 * 1024)
             inputStream?.close()
             output.close() // Close output stream as well
+
             return destFile.toURI().toString()
         }
     }
