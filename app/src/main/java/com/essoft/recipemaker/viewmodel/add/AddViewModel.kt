@@ -19,7 +19,7 @@ class AddViewModel(private val recipeRepository: IRecipeRepository) : ViewModel(
     private val _uiState = MutableStateFlow(AddUiState())
     val uiState: StateFlow<AddUiState> = _uiState
 
-    lateinit var tempUri: String
+    private lateinit var tempUri: String
 
     fun onEvent(event: AddEvent) {
         when(event) {
